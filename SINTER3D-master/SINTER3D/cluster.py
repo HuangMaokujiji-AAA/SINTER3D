@@ -16,17 +16,17 @@ def mclust_R(adata, num_cluster, modelNames='EEE', used_obsm='emb_pca', random_s
     import rpy2.robjects as robjects
     robjects.r.library("mclust")
 
-    import rpy2.robjects.numpy2ri
-    rpy2.robjects.numpy2ri.activate()
     r_random_seed = robjects.r['set.seed']
     r_random_seed(random_seed)
     rmclust = robjects.r['Mclust']
 
-    # 显式构建 R 矩阵，避免 numpy2ri.numpy2rpy 的 dimnames 兼容性问题
+    # Mclust derives names from its call expression when colnames are missing;
+    # an rpy2 matrix can make that expression longer than the matrix width.
     data = np.asarray(adata.obsm[used_obsm], dtype=np.float64)
     data = np.ascontiguousarray(data)
     nr, nc = data.shape
     r_matrix = robjects.r.matrix(robjects.FloatVector(data.flatten()), nrow=nr, ncol=nc, byrow=True)
+    r_matrix.colnames = robjects.StrVector([f'PC{i + 1}' for i in range(nc)])
     res = rmclust(r_matrix, num_cluster, modelNames)
     mclust_res = np.array(res[-2])
 
