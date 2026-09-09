@@ -1,6 +1,8 @@
 import joblib
 import numpy as np
+import os
 import scanpy as sc
+import torch
 
 from SINTER3D.model_basic import Model as BaseModel
 from SINTER3D.model_spatial import Model as MultiScaleModel
@@ -48,6 +50,22 @@ def auto_select_and_train(
 
     # 5. Start training
     model.train()
+
+    # 6. Save the trained model immediately so it survives kernel disconnects/restarts.
+    checkpoint_dir = os.path.abspath(model.save_path)
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    checkpoint_path = os.path.join(checkpoint_dir, f"sinter3d_{model_type}_checkpoint.pt")
+    torch.save(
+        {
+            "model_type": model_type,
+            "model_state_dict": model.net.state_dict(),
+            "optimizer_state_dict": model.optimizer.state_dict(),
+            "config": config,
+            "slice_idx": list(slice_idx),
+        },
+        checkpoint_path,
+    )
+    print(f"Model checkpoint saved to: {checkpoint_path}")
 
     return model
 
