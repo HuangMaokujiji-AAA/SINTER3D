@@ -1,2 +1,5 @@
 SINTER3D-master/scripts/
 .vscode/
+
+__pycache__/
+*.py[cod]
