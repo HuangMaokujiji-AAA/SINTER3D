@@ -11,7 +11,7 @@ def mclust_R(adata, num_cluster, modelNames='EEE', used_obsm='emb_pca', random_s
     Clustering using the mclust algorithm.
     The parameters are the same as those in the R package mclust.
     """
-    
+
     np.random.seed(random_seed)
     import rpy2.robjects as robjects
     robjects.r.library("mclust")
@@ -21,8 +21,13 @@ def mclust_R(adata, num_cluster, modelNames='EEE', used_obsm='emb_pca', random_s
     r_random_seed = robjects.r['set.seed']
     r_random_seed(random_seed)
     rmclust = robjects.r['Mclust']
-    
-    res = rmclust(rpy2.robjects.numpy2ri.numpy2rpy(adata.obsm[used_obsm]), num_cluster, modelNames)
+
+    # 显式构建 R 矩阵，避免 numpy2ri.numpy2rpy 的 dimnames 兼容性问题
+    data = np.asarray(adata.obsm[used_obsm], dtype=np.float64)
+    data = np.ascontiguousarray(data)
+    nr, nc = data.shape
+    r_matrix = robjects.r.matrix(robjects.FloatVector(data.flatten()), nrow=nr, ncol=nc, byrow=True)
+    res = rmclust(r_matrix, num_cluster, modelNames)
     mclust_res = np.array(res[-2])
 
     adata.obs['mclust'] = mclust_res
