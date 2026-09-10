@@ -202,6 +202,24 @@ def my_fused_gromov_wasserstein(M, C1, C2, p, q, G_init = None, loss_fun='square
         if use_gpu:
             G0 = G0.cuda()
 
+    # POT >= 0.9 no longer exposes the private ot.gromov.cg alias. Its public
+    # FGW solver now supports G0 directly and preserves the requested line search.
+    if not hasattr(ot.gromov, "cg"):
+        return ot.gromov.fused_gromov_wasserstein(
+            M,
+            C1,
+            C2,
+            p=p,
+            q=q,
+            loss_fun=loss_fun,
+            alpha=alpha,
+            armijo=armijo,
+            G0=G0,
+            log=log,
+            max_iter=numItermax,
+            **kwargs,
+        )
+
     def f(G):
         return ot.gromov.gwloss(constC, hC1, hC2, G)
 
